@@ -69,15 +69,19 @@ simuleval \
 ```
 # Paper Examples
 Example 1: 
+
 https://github.com/Meaffel/ShiftableContext/assets/71992264/81f30fbb-8eb7-46fd-98c4-c8dfa498feae
 
 Example 2:
+
 https://github.com/Meaffel/ShiftableContext/assets/71992264/672203d6-2419-462f-9fb9-b4c876f91782
 
 Example 3:
+
 https://github.com/Meaffel/ShiftableContext/assets/71992264/ec36b60e-9b88-4dd4-9c52-1220e16bf099
 
 Example 4:
+
 https://github.com/Meaffel/ShiftableContext/assets/71992264/ee4e5f88-8598-498c-abf8-99abc466be23
 
 Below, there is the original README file.
