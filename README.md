@@ -1,3 +1,86 @@
+# Shiftable Context: Addressing Training-Inference Context Mismatch in Simultaneous Speech Translation
+
+This repository is a fork of https://github.com/pytorch/fairseq containing the supplementary code used in our ICML 2023 paper Shiftable Context: Addressing Training-Inference Context Mismatch in
+Simultaneous Speech Translation.  Our code is in the `fairseq/models/speech_to_text/modules` folder.
+
+If you use this code, please consider citing our paper.
+
+The script used to run the ASR pretraining experiments on a single GPU for the ACL 2023 paper is the following:
+
+```bash
+save_dir=$1
+data_dir=$2
+
+fairseq-train $data_dir \
+    --config-yaml config_asr.yaml --train-subset train_asr --valid-subset dev_asr \
+    --save-dir $save_dir --num-workers 2 --max-tokens 80000 --max-update 100000 \
+    --task speech_to_text --criterion label_smoothed_cross_entropy \
+    --arch convtransformer_augmented_memory --optimizer adam --adam-betas [0.9,0.98] --lr 0.0007 --lr-scheduler inverse_sqrt \
+    --simul-type waitk_fixed_pre_decision --criterion label_smoothed_cross_entropy --fixed-pre-decision-ratio 8 --waitk-lagging 1 \
+    --warmup-updates 4000 --warmup-init-lr 0.0001 --clip-norm 10.0 --seed 3 --update-freq 4 \
+    --ddp-backend legacy_ddp \
+    --log-interval 50 \
+    --segment-size 64 --right-context 0 --left-context 0 --max-memory-size 3 \
+    --encoder-normalize-before --decoder-normalize-before --max-relative-position 16 \
+    --patience 5 --keep-last-epochs 5 \
+```
+The script used to run the SimulST pretraining experiments on a single GPU for the ACL 2023 paper is the following:
+```bash
+save_dir=$1
+pre_train_dir=$2
+data_dir=$3
+
+fairseq-train $data_dir \
+    --task speech_to_text --config-yaml config_st.yaml --train-subset train_st --valid-subset dev_st \
+    --save-dir $save_dir \
+    --load-pretrained-encoder-from $pre_train_dir/checkpoint_average.pt \
+    --arch convtransformer_augmented_memory \
+    --simul-type waitk_fixed_pre_decision --criterion label_smoothed_cross_entropy --fixed-pre-decision-ratio 8 --waitk-lagging 1 \
+    --max-tokens 80000 --num-workers 2 --update-freq 4 \
+    --optimizer adam --adam-betas [0.9,0.98] --lr 0.00035 --lr-scheduler inverse_sqrt --warmup-updates 7500 --warmup-init-lr 0.0001 --clip-norm 10.0 \
+    --max-update 100000 --seed 4 --ddp-backend legacy_ddp --log-interval 50 \
+    --segment-size 64 --right-context 0 --left-context 0 --max-memory-size 3 \
+    --encoder-normalize-before --decoder-normalize-before --max-relative-position 16 \
+    --attention-dropout 0.2 --activation-dropout 0.2 --weight-decay 0.0001 \
+    --patience 10 --keep-last-epochs 10 \
+```
+
+Our shiftable context was applied during inference of SimulST using SimulEval version 1.0.1 by running the following:
+
+```bash
+model_path=$1
+pre_train_dir=$2
+data_dir=$3
+output_dir=$4
+fairseq_dir=$5
+source=$6
+target=$6
+
+simuleval \
+    --agent $fairseq_dir/fairseq/examples/speech_to_text/simultaneous_translation/agents/fairseq_simul_st_agent.py \
+    --source $source \
+    --target $target \
+    --data-bin $data_dir \
+    --config config_st.yaml \
+    --port 1227 --gpu \
+    --model-path $model_path/checkpoint_average.pt \
+    --output $output_dir \
+    --scores --change-model --shift-right-context --shift-left-context --shift-center-context \
+```
+# Paper Examples
+Example 1: 
+https://github.com/Meaffel/ShiftableContext/assets/71992264/81f30fbb-8eb7-46fd-98c4-c8dfa498feae
+
+Example 2:
+https://github.com/Meaffel/ShiftableContext/assets/71992264/672203d6-2419-462f-9fb9-b4c876f91782
+
+Example 3:
+https://github.com/Meaffel/ShiftableContext/assets/71992264/ec36b60e-9b88-4dd4-9c52-1220e16bf099
+
+Example 4:
+https://github.com/Meaffel/ShiftableContext/assets/71992264/ee4e5f88-8598-498c-abf8-99abc466be23
+
+Below, there is the original README file.
 <p align="center">
   <img src="docs/fairseq_logo.png" width="150">
   <br />
