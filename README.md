@@ -1,19 +1,18 @@
 # Shiftable Context: Addressing Training-Inference Context Mismatch in Simultaneous Speech Translation
 
 This repository is a fork of https://github.com/pytorch/fairseq containing the supplementary code used in our ICML 2023 paper Shiftable Context: Addressing Training-Inference Context Mismatch in
-Simultaneous Speech Translation.  Our code is in the `fairseq/models/speech_to_text/modules` folder.
+Simultaneous Speech Translation.  Our code modifications to the Augmented Memory Transformer that applies our Shiftable Context are provided in the file `fairseq/models/speech_to_text/modules/augmented_memory_attention.py`.
 
 If you use this code, please consider citing our paper.
 
-The script used to run the ASR pretraining experiments on a single GPU for the ACL 2023 paper is the following:
+The data preparation script for the MuST-C dataset we used in our paper is `examples/speech_to_text/prep_mustc_data.py`.
+
+The script we used to run the ASR pretraining experiments on a single GPU for the ICML 2023 paper is the following:
 
 ```bash
-save_dir=$1
-data_dir=$2
-
-fairseq-train $data_dir \
+fairseq-train ${data_dir} \
     --config-yaml config_asr.yaml --train-subset train_asr --valid-subset dev_asr \
-    --save-dir $save_dir --num-workers 2 --max-tokens 80000 --max-update 100000 \
+    --save-dir ${save_dir} --num-workers 2 --max-tokens 80000 --max-update 100000 \
     --task speech_to_text --criterion label_smoothed_cross_entropy \
     --arch convtransformer_augmented_memory --optimizer adam --adam-betas [0.9,0.98] --lr 0.0007 --lr-scheduler inverse_sqrt \
     --simul-type waitk_fixed_pre_decision --criterion label_smoothed_cross_entropy --fixed-pre-decision-ratio 8 --waitk-lagging 1 \
@@ -24,16 +23,16 @@ fairseq-train $data_dir \
     --encoder-normalize-before --decoder-normalize-before --max-relative-position 16 \
     --patience 5 --keep-last-epochs 5 \
 ```
-The script used to run the SimulST pretraining experiments on a single GPU for the ACL 2023 paper is the following:
-```bash
-save_dir=$1
-pre_train_dir=$2
-data_dir=$3
+In the script, `${data_dir}` refers to the directory of the prepared dataset, and `${save_dir}` refers to the directory to save the model checkpoints.  
 
-fairseq-train $data_dir \
+Similarly, the script used to run the SimulST pretraining experiments on a single GPU for the ICML 2023 paper is the following:
+
+```bash
+
+fairseq-train ${data_dir} \
     --task speech_to_text --config-yaml config_st.yaml --train-subset train_st --valid-subset dev_st \
-    --save-dir $save_dir \
-    --load-pretrained-encoder-from $pre_train_dir/checkpoint_average.pt \
+    --save-dir ${save_dir} \
+    --load-pretrained-encoder-from ${pre_train_dir}/checkpoint_average.pt \
     --arch convtransformer_augmented_memory \
     --simul-type waitk_fixed_pre_decision --criterion label_smoothed_cross_entropy --fixed-pre-decision-ratio 8 --waitk-lagging 1 \
     --max-tokens 80000 --num-workers 2 --update-freq 4 \
@@ -45,29 +44,29 @@ fairseq-train $data_dir \
     --patience 10 --keep-last-epochs 10 \
 ```
 
-Our shiftable context was applied during inference of SimulST using SimulEval version 1.0.1 by running the following:
+The checkpoint averaging script we used to average model checkpoints after ASR and SimulST training is `scripts/average_checkpoints.py`. 
+
+The data preparation script we used to prepare our test set is `examples/speech_to_text/seg_mustc_data.py`.  
+
+Our shiftable context was applied during SimulST inference using SimulEval version 1.0.1 by running the following script:
 
 ```bash
-model_path=$1
-pre_train_dir=$2
-data_dir=$3
-output_dir=$4
-fairseq_dir=$5
-source=$6
-target=$6
-
 simuleval \
     --agent $fairseq_dir/fairseq/examples/speech_to_text/simultaneous_translation/agents/fairseq_simul_st_agent.py \
-    --source $source \
-    --target $target \
-    --data-bin $data_dir \
+    --source ${source} \
+    --target ${target} \
+    --data-bin ${data_dir} \
     --config config_st.yaml \
     --port 1227 --gpu \
-    --model-path $model_path/checkpoint_average.pt \
-    --output $output_dir \
+    --model-path ${save_dir}/checkpoint_average.pt \
+    --output ${output_dir} \
     --scores --change-model --shift-right-context --shift-left-context --shift-center-context \
 ```
+In the command, `${source}` refers to a file with a list of audio file paths, and `${target}` refers to a file with the translations of the audio files listed in `${source}`. Finally, `${output_dir}` is the directory to save the evaluation output.
+
 # Paper Examples
+Below is the audio for the examples provided in the Appendix of our paper.
+
 Example 1: 
 
 https://github.com/Meaffel/ShiftableContext/assets/71992264/81f30fbb-8eb7-46fd-98c4-c8dfa498feae
@@ -84,7 +83,20 @@ Example 4:
 
 https://github.com/Meaffel/ShiftableContext/assets/71992264/ee4e5f88-8598-498c-abf8-99abc466be23
 
-Below, there is the original README file.
+# Citation
+
+```bibtex
+@misc{raffel2023shiftable,
+      title={Shiftable Context: Addressing Training-Inference Context Mismatch in Simultaneous Speech Translation}, 
+      author={Matthew Raffel and Drew Penney and Lizhong Chen},
+      year={2023},
+      eprint={2307.01377},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL}
+}
+```
+
+Below, is the original README file.
 <p align="center">
   <img src="docs/fairseq_logo.png" width="150">
   <br />
